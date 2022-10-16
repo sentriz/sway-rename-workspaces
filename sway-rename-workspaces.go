@@ -88,6 +88,9 @@ func (c *client) updateWorkspaceLabels(ctx context.Context) error {
 			applicationNames = uniqueStable(applicationNames)
 			workspaceName = fmt.Sprintf("%d %s", workspaceN, strings.Join(applicationNames, " "))
 		}
+		if workspaceName == workspace.Name {
+			return nil
+		}
 
 		command := fmt.Sprintf(`rename workspace number %d to %q`, workspaceN, workspaceName)
 		if _, err := c.RunCommand(ctx, command); err != nil {
