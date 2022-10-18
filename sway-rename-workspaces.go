@@ -125,6 +125,9 @@ func findApplications(node *sway.Node) []*sway.Node {
 	for _, node := range node.Nodes {
 		nodes = append(nodes, findApplications(node)...)
 	}
+	for _, node := range node.FloatingNodes {
+		nodes = append(nodes, findApplications(node)...)
+	}
 	return nodes
 }
 
