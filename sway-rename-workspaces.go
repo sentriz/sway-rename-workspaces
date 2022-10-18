@@ -142,17 +142,20 @@ func applicationName(node *sway.Node) string {
 }
 
 var (
-	matchTrailingParen = regexp.MustCompile(`\s*[[({].*`)
-	matchFQN           = regexp.MustCompile(`([a-z0-9]+\.)+`)
-	matchNonAlphaNum   = regexp.MustCompile(`[^a-z0-9]`)
+	matchFQN                  = regexp.MustCompile(`([a-z0-9]+\.)+`)
+	matchNumberDisambiguation = regexp.MustCompile(`[0-9.\-_/\|]+($|\s)`)
+	matchTrailingParen        = regexp.MustCompile(`\s*[[({].*`)
+	matchNonAlphaNum          = regexp.MustCompile(`[^a-z0-9]`)
 )
 
 func formatName(name string) string {
 	name = strings.TrimSpace(name)
 	name = strings.ToLower(name)
-	name = matchTrailingParen.ReplaceAllString(name, "") // xxx (yyy)       -> xxx
-	name = matchFQN.ReplaceAllString(name, "")           // com.example.xxx -> xxx
-	name = matchNonAlphaNum.ReplaceAllString(name, " ")  // x-y             -> x y
+	name = matchFQN.ReplaceAllString(name, "")                  // com.example.xxx -> xxx
+	name = matchNumberDisambiguation.ReplaceAllString(name, "") // xxx.123         -> xxx
+	name = matchTrailingParen.ReplaceAllString(name, "")        // xxx (yyy)       -> xxx
+	name = matchNonAlphaNum.ReplaceAllString(name, " ")         // x-y             -> x y
+	name = strings.Join(strings.Fields(name), " ")
 	return name
 }
 
