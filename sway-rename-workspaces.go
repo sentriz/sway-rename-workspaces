@@ -158,6 +158,7 @@ func formatName(name string) string {
 	name = matchTrailingParen.ReplaceAllString(name, "")        // xxx (yyy)       -> xxx
 	name = matchNonAlphaNum.ReplaceAllString(name, " ")         // x-y             -> x y
 	name = strings.Join(strings.Fields(name), " ")
+	name = strings.TrimSpace(name)
 	return name
 }
 
