@@ -80,7 +80,9 @@ func (c *client) updateWorkspaceLabels(ctx context.Context) error {
 
 		var applicationNames []string
 		for _, node := range findApplications(workspace) {
-			applicationNames = append(applicationNames, formatName(applicationName(node)))
+			if name := formatName(applicationName(node)); name != "" {
+				applicationNames = append(applicationNames, name)
+			}
 		}
 
 		workspaceName := fmt.Sprintf("%d", workspaceN)
