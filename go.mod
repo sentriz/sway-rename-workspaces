@@ -2,11 +2,10 @@ module go.senan.xyz/sway-rename-workspaces
 
 go 1.19
 
-require github.com/joshuarubin/go-sway v1.2.0
-
 require (
-	github.com/joshuarubin/lifecycle v1.0.0 // indirect
-	go.uber.org/atomic v1.3.2 // indirect
-	go.uber.org/multierr v1.1.0 // indirect
-	golang.org/x/sync v0.0.0-20190412183630-56d357773e84 // indirect
+	github.com/joshuarubin/go-sway v1.2.0
+	github.com/joshuarubin/lifecycle v1.1.4
+	go.uber.org/multierr v1.11.0
 )
+
+require golang.org/x/sync v0.3.0 // indirect
