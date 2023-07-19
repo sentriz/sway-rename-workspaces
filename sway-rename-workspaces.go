@@ -142,6 +142,9 @@ func applicationName(node *sway.Node) string {
 	if node.WindowProperties != nil && node.WindowProperties.Class != "" {
 		return node.WindowProperties.Class
 	}
+	if node.WindowProperties != nil && node.WindowProperties.Title != "" {
+		return node.WindowProperties.Title
+	}
 	return ""
 }
 
