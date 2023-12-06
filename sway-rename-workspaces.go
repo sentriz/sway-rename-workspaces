@@ -153,6 +153,7 @@ var (
 	matchNumberDisambiguation = regexp.MustCompile(`[0-9.\-_/\|]+($|\s)`)
 	matchTrailingParen        = regexp.MustCompile(`\s*[[({].*`)
 	matchNonAlphaNum          = regexp.MustCompile(`[^a-z0-9]`)
+	matchVersion              = regexp.MustCompile(`\b(latest|beta|unstable)\b`)
 )
 
 func formatName(name string) string {
@@ -162,6 +163,7 @@ func formatName(name string) string {
 	name = matchNumberDisambiguation.ReplaceAllString(name, "") // xxx.123         -> xxx
 	name = matchTrailingParen.ReplaceAllString(name, "")        // xxx (yyy)       -> xxx
 	name = matchNonAlphaNum.ReplaceAllString(name, " ")         // x-y             -> x y
+	name = matchVersion.ReplaceAllString(name, " ")             // chrome beta     -> chrome
 	name = strings.Join(strings.Fields(name), " ")
 	name = strings.TrimSpace(name)
 	return name
