@@ -109,7 +109,7 @@ func (c *client) updateWorkspaceLabels(ctx context.Context) error {
 		workspaceName := fmt.Sprintf("%d", workspaceN)
 		if len(applicationNames) > 0 {
 			applicationNames = uniqueStable(applicationNames)
-			workspaceName = fmt.Sprintf("%d %s", workspaceN, strings.Join(applicationNames, " "))
+			workspaceName = fmt.Sprintf("%d %s", workspaceN, strings.Join(applicationNames, ", "))
 		}
 		if workspaceName == workspace.Name {
 			continue
