@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"iter"
 	"log"
 	"regexp"
 	"strconv"
@@ -72,10 +73,10 @@ func (c *client) updateWorkspaceLabels(ctx context.Context) error {
 		return fmt.Errorf("get tree: %w", err)
 	}
 
-	return iterWorkspaces(root, func(workspace *sway.Node) error {
+	for workspace := range iterWorkspaces(root) {
 		workspaceN, _ := strconv.Atoi(matchWorkspace.FindString(workspace.Name))
 		if workspaceN < 1 {
-			return nil
+			continue
 		}
 
 		var applicationNames []string
@@ -91,7 +92,7 @@ func (c *client) updateWorkspaceLabels(ctx context.Context) error {
 			workspaceName = fmt.Sprintf("%d %s", workspaceN, strings.Join(applicationNames, " "))
 		}
 		if workspaceName == workspace.Name {
-			return nil
+			continue
 		}
 
 		command := fmt.Sprintf(`rename workspace number %d to %q`, workspaceN, workspaceName)
@@ -99,22 +100,25 @@ func (c *client) updateWorkspaceLabels(ctx context.Context) error {
 			return fmt.Errorf("run rename command: %w", err)
 		}
 
-		return nil
-	})
+		continue
+	}
+
+	return nil
 }
 
-func iterWorkspaces(root *sway.Node, cb func(*sway.Node) error) error {
-	for _, output := range root.Nodes {
-		for _, workspace := range output.Nodes {
-			if workspace.Type != sway.NodeWorkspace {
-				continue
-			}
-			if err := cb(workspace); err != nil {
-				return err
+func iterWorkspaces(root *sway.Node) iter.Seq[*sway.Node] {
+	return func(yield func(*sway.Node) bool) {
+		for _, output := range root.Nodes {
+			for _, workspace := range output.Nodes {
+				if workspace.Type != sway.NodeWorkspace {
+					continue
+				}
+				if !yield(workspace) {
+					return
+				}
 			}
 		}
 	}
-	return nil
 }
 
 // recurse into node finding any other nodes that have a PID.
