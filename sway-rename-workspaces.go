@@ -2,40 +2,55 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"iter"
 	"log"
+	"os"
+	"os/signal"
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/joshuarubin/go-sway"
+	"golang.org/x/sync/errgroup"
 )
 
 func main() {
-	swayClient, err := sway.New(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+	errgrp, ctx := errgroup.WithContext(ctx)
+
+	swayClient, err := sway.New(ctx)
 	if err != nil {
 		log.Fatalf("error creating client: %v", err)
+		return
 	}
+
 	clint := &client{
 		Client: swayClient,
 	}
-
 	handlr := &handler{
 		EventHandler: sway.NoOpEventHandler(),
 		client:       clint,
 		timer:        time.NewTimer(0),
 	}
 
-	go handlr.waitUpdateWorkspaceLabels(context.Background())
+	errgrp.Go(func() error {
+		return handlr.waitUpdateWorkspaceLabels(ctx)
+	})
 
-	events := []sway.EventType{
-		sway.EventTypeWorkspace,
-		sway.EventTypeWindow,
-	}
-	if err := sway.Subscribe(context.Background(), handlr, events...); err != nil {
-		log.Fatalf("error in subscribe: %v", err)
+	errgrp.Go(func() error {
+		if err := sway.Subscribe(ctx, handlr, sway.EventTypeWorkspace, sway.EventTypeWindow); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err := errgrp.Wait(); err != nil && !errors.Is(err, context.Canceled) {
+		log.Fatalln(err.Error())
 	}
 }
 
@@ -53,10 +68,15 @@ func (h *handler) Workspace(ctx context.Context, _ sway.WorkspaceEvent) {
 func (h *handler) Window(ctx context.Context, _ sway.WindowEvent) {
 	h.timer.Reset(cooldown)
 }
-func (h *handler) waitUpdateWorkspaceLabels(ctx context.Context) {
-	for range h.timer.C {
-		if err := h.client.updateWorkspaceLabels(ctx); err != nil {
-			log.Printf("error updating workspace labels: %v", err)
+func (h *handler) waitUpdateWorkspaceLabels(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-h.timer.C:
+			if err := h.client.updateWorkspaceLabels(ctx); err != nil {
+				log.Printf("error updating workspace labels: %v", err)
+			}
 		}
 	}
 }
