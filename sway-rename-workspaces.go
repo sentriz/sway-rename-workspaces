@@ -115,7 +115,7 @@ func (c *client) updateWorkspaceLabels(ctx context.Context) error {
 			continue
 		}
 
-		command := fmt.Sprintf(`rename workspace number %d to %q`, workspaceN, workspaceName)
+		command := fmt.Sprintf(`rename workspace %q to %q`, workspace.Name, workspaceName)
 		if _, err := c.RunCommand(ctx, command); err != nil {
 			return fmt.Errorf("run rename command: %w", err)
 		}
