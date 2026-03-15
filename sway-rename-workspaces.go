@@ -23,9 +23,12 @@ func main() {
 	defer cancel()
 	errgrp, ctx := errgroup.WithContext(ctx)
 
-	swayClient, err := sway.New(ctx)
-	if err != nil {
-		log.Fatalf("error creating client: %v", err)
+	var swayClient sway.Client
+	if err := retry(ctx, "connect", func() error {
+		var err error
+		swayClient, err = sway.New(ctx)
+		return err
+	}); err != nil {
 		return
 	}
 
@@ -43,10 +46,9 @@ func main() {
 	})
 
 	errgrp.Go(func() error {
-		if err := sway.Subscribe(ctx, handlr, sway.EventTypeWorkspace, sway.EventTypeWindow); err != nil {
-			return err
-		}
-		return nil
+		return retry(ctx, "subscribe", func() error {
+			return sway.Subscribe(ctx, handlr, sway.EventTypeWorkspace, sway.EventTypeWindow)
+		})
 	})
 
 	if err := errgrp.Wait(); err != nil && !errors.Is(err, context.Canceled) {
@@ -191,6 +193,24 @@ func formatName(name string) string {
 	name = strings.Join(strings.Fields(name), " ")
 	name = strings.TrimSpace(name)
 	return name
+}
+
+func retry(ctx context.Context, name string, f func() error) error {
+	for {
+		if err := f(); err != nil {
+			if ctx.Err() != nil {
+				return nil
+			}
+			log.Printf("%s error, retrying: %v", name, err)
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-time.After(1 * time.Second):
+			}
+			continue
+		}
+		return nil
+	}
 }
 
 func uniqueStable[T comparable](items []T) []T {
