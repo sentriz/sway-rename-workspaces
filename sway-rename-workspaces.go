@@ -58,8 +58,9 @@ func main() {
 
 type handler struct {
 	sway.EventHandler
-	client *client
-	timer  *time.Timer
+	client      *client
+	timer       *time.Timer
+	prevFocusID int64
 }
 
 const cooldown = 100 * time.Millisecond
@@ -67,8 +68,25 @@ const cooldown = 100 * time.Millisecond
 func (h *handler) Workspace(ctx context.Context, _ sway.WorkspaceEvent) {
 	h.timer.Reset(cooldown)
 }
-func (h *handler) Window(ctx context.Context, _ sway.WindowEvent) {
+func (h *handler) Window(ctx context.Context, e sway.WindowEvent) {
 	h.timer.Reset(cooldown)
+
+	switch e.Change {
+	case sway.WindowFocus:
+		h.markBack(ctx, e.Container.ID)
+	}
+}
+
+const backMark = "_back"
+
+func (h *handler) markBack(ctx context.Context, newFocusID int64) {
+	if h.prevFocusID != 0 && h.prevFocusID != newFocusID {
+		command := fmt.Sprintf(`[con_id=%d] mark --add %s`, h.prevFocusID, backMark)
+		if _, err := h.client.RunCommand(ctx, command); err != nil {
+			log.Printf("error marking previous window: %v", err)
+		}
+	}
+	h.prevFocusID = newFocusID
 }
 func (h *handler) waitUpdateWorkspaceLabels(ctx context.Context) error {
 	for {
